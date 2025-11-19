@@ -1,4 +1,4 @@
-package model.data;
+package com.example.mahjong.model;
 
 /**
  * 麻雀の面子の一人、コンピュータープレイヤーの二人目を定義するクラスです。
