@@ -5,29 +5,38 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-/**手役のいろいろな判定を返すクラスです。
- * ごちゃごちゃしてます。
+/**
+ * 麻雀の役判定やあがり判定など、ルールに関連する静的メソッドを提供するユーティリティクラスです。
+ * このクラスはインスタンス化できず、すべてのメソッドは静的に呼び出されます。
+ * 内部ロジックは、牌の種類をインデックスとする34要素の整数配列（handCount）を多用して計算を行います。
  */
-public class Judge {
+public final class Judge {
+	/**
+	 * プライベートコンストラクタにより、このクラスのインスタンス化を防ぎます。
+	 */
 	private Judge() {}
 
-	// メソッド
 	/**
-	 * 判定結果の全情報を格納したListを返す静的メソッドです。
-	 * 
-	 * @param 手牌のList
-	 * @return 判定結果List
+	 * ゲーム中の手牌の状態（あがり、テンパイ）を判定します。
+	 *
+	 * @param hand 現在の手牌リスト
+	 * @return 判定結果を格納したリスト。[0]にあがり判定(1ならあがり)、[1]にテンパイ判定(1ならテンパイ)が入ります。
 	 */
 	public static List<Integer> judgeDuringTheGame(List<TileType> hand) {
-		int agariTileId = hand.getLast().getId();
 		int[] cnt = newHandCount(hand);
-		List<Integer> judge = new ArrayList<Integer>();
+		List<Integer> judge = new ArrayList<>();
 		judge.add(judgeAgari(cnt));
 		judge.add(judgeTempai(cnt));
-
 		return judge;
 	}
-	
+
+	/**
+	 * 手牌から成立している役を判定します。
+	 * 現在はタンヤオと七対子のみを判定します。
+	 *
+	 * @param hand 判定対象の手牌リスト
+	 * @return 成立している役 ({@link Hands}) のリスト
+	 */
 	public static List<Hands> judgeHand(List<TileType> hand){
 		List<Hands> hands = new ArrayList<>();
 		int[] handCount = newHandCount(hand);
@@ -36,78 +45,102 @@ public class Judge {
 		return hands;
 	}
 
+	/**
+	 * 他のプレイヤーの捨て牌に対して鳴き（ポン、チー、カン）やロンが可能かどうかを判定します。
+	 *
+	 * @param hand 自分の手牌リスト
+	 * @param discard 捨て牌の情報を持つマップ（キー：プレイヤーの風、値：捨て牌のリスト）
+	 * @param myWind 自分の風
+	 * @return 各アクションの可否を示すboolean型のリスト。[0]:ポン, [1]:カン, [2]:チー, [3]:ロン
+	 */
 	public static List<Boolean> canCall(List<TileType> hand, Map<Integer, List<TileType>> discard, int myWind) {
 		TileType discardTile = discard.values().iterator().next().get(0);
 		int discardId = discardTile.getId();
 		int[] handCount = newHandCount(hand);
 		List<Boolean> canCalls = new ArrayList<>();
-		// 刻子
-		canCalls.add(canPon(handCount, discardId));
-		// 槓子
-		canCalls.add(canKan(handCount, discardId));
-		// 順子
-		//if ((myWind - discard. + 4) % 4 == 2 )
-		canCalls.add(canChii(handCount, discardId));
-		// ロン
-		canCalls.add(canRon(handCount, discardId));
+		canCalls.add(canPon(handCount, discardId));     // Pon
+		canCalls.add(canKan(handCount, discardId));     // Kan
+		canCalls.add(canChii(handCount, discardId));    // Chii
+		canCalls.add(canRon(handCount, discardId));     // Ron
 		return canCalls;
 	}
 
+	/**
+	 * 指定された捨て牌に対してポンが可能かを判定します。
+	 *
+	 * @param handCount 自分の手牌のカウント配列
+	 * @param discardId 捨て牌のID
+	 * @return ポンが可能な場合は`true`
+	 */
 	public static boolean canPon(int[] handCount, int discardId) {
-		if (handCount[discardId] >= 2) {
-			return true;
-		}
-		return false;
+		return handCount[discardId] >= 2;
 	}
 
+	/**
+	 * 指定された捨て牌に対して大明槓が可能かを判定します。
+	 *
+	 * @param handCount 自分の手牌のカウント配列
+	 * @param discardId 捨て牌のID
+	 * @return カンが可能な場合は`true`
+	 */
 	public static boolean canKan(int[] handCount, int discardId) {
-		if (handCount[discardId] >= 3) {
+		return handCount[discardId] >= 3;
+	}
+
+	/**
+	 * 指定された捨て牌に対してチーが可能かを判定します。
+	 *
+	 * @param handCount 自分の手牌のカウント配列
+	 * @param discardId 捨て牌のID
+	 * @return チーが可能な場合は`true`
+	 */
+	public static boolean canChii(int[] handCount, int discardId) {
+		if (discardId >= 27) return false; // 字牌はチーできない
+
+		// discardId を含む順子の3つのパターンをチェック
+		int mod = discardId % 9;
+
+		// パターン1: [discardId-2, discardId-1, discardId]
+		if (mod >= 2 && handCount[discardId - 2] >= 1 && handCount[discardId - 1] >= 1) {
 			return true;
 		}
-		return false;
-	}
-
-	public static boolean canChii(int[] handCount, int discardId) {
-		if (discardId < 27) {
-			// 〇、〇、打牌パターン
-			if (discardId % 9 != 0 && discardId % 9 != 1) {
-				if (handCount[discardId - 2] >= 1 && handCount[discardId - 1] >= 1) {
-					return true;
-				}
-			}
-			// 〇、打牌、〇パターン
-			if (discardId % 9 != 0 && discardId % 9 != 8) {
-				if (handCount[discardId - 1] >= 1 && handCount[discardId + 1] >= 1) {
-					return true;
-				}
-			}
-			// 打牌、〇、〇パターン
-			if (discardId % 9 != 7 && discardId % 9 != 8) {
-				if (handCount[discardId + 1] >= 1 && handCount[discardId + 2] >= 1) {
-					return true;
-				}
-			}
+		// パターン2: [discardId-1, discardId, discardId+1]
+		if (mod >= 1 && mod <= 7 && handCount[discardId - 1] >= 1 && handCount[discardId + 1] >= 1) {
+			return true;
 		}
+		// パターン3: [discardId, discardId+1, discardId+2]
+		if (mod <= 6 && handCount[discardId + 1] >= 1 && handCount[discardId + 2] >= 1) {
+			return true;
+		}
+
 		return false;
 	}
 
+	/**
+	 * 指定された捨て牌でロンあがりが可能かを判定します。
+	 *
+	 * @param handCount 自分の手牌のカウント配列
+	 * @param discardId 捨て牌のID
+	 * @return ロンあがりが可能な場合は`true`
+	 */
 	public static boolean canRon(int[] handCount, int discardId) {
 		int[] tempHandCount = handCount.clone();
 		tempHandCount[discardId]++;
-		if (judgeAgari(tempHandCount) == 1) {
-			return true;
-		}
-		return false;
+		return judgeAgari(tempHandCount) == 1;
 	}
 
+	/**
+	 * 指定されたツモ牌でツモあがりが可能かを判定します。
+	 *
+	 * @param hand 自分の手牌リスト
+	 * @param tsumoTile ツモした牌
+	 * @return ツモあがりが可能な場合は`true`
+	 */
 	public static boolean canTsumo(List<TileType> hand, TileType tsumoTile) {
 		List<TileType> tempHand = new ArrayList<>(hand);
 		tempHand.add(tsumoTile);
 		int[] handCount = newHandCount(tempHand);
-		if (judgeAgari(handCount) == 1) {
-			return true;
-		}
-		return false;
+		return judgeAgari(handCount) == 1;
 	}
 
 	// TODO

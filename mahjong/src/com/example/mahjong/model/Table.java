@@ -6,36 +6,52 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 麻雀のゲーム卓（場）の状態を管理するモデルクラスです。
+ * 牌山、捨て牌、ドラ、局数など、ゲーム全体の共有情報を保持します。
+ */
 public class Table extends SubjectTable {
 
-    // フィールド
-    private int round; // 局数
-    
-    private Map<Mentsu, Integer> points; // 点数管理
-    private static final int initialPoints = 25000; // 初期点数
-    private static final int totalPoints = 100000; // 総点数
-    
-    private int dealer; // 親の位置
-    private int fieldWind; // 場風（0,東 1,南 2,西 3,北）
-    private int MentsuCount; // 面子の数
+    /** 現在の局数 */
+    private int round;
+    /** 各プレイヤーの点数を管理するマップ */
+    private Map<Mentsu, Integer> points;
+    /** 初期点数 */
+    private static final int initialPoints = 25000;
+    /** ゲーム全体の総点数 */
+    private static final int totalPoints = 100000;
+    /** 現在の親プレイヤーの位置 */
+    private int dealer;
+    /** 現在の場風（0:東, 1:南, 2:西, 3:北） */
+    private int fieldWind;
+    /** 現在成立している面子の数 */
+    private int MentsuCount;
+    /** ゲームの牌山。ここから牌がツモられます。 */
+    private List<TileType> wall;
+    /** 各プレイヤーの捨て牌を管理するマップ。キーはプレイヤーの風。 */
+    private Map<Integer, List<TileType>> discard = new HashMap<>();
+    /** 現在のドラ表示牌 */
+    private TileType dora;
+    /** 現在の巡目 */
+    private int turn;
+    /** 現在の積み棒（本場）の数 */
+    private int honba;
+    /** 場に出ているリーチ棒の数 */
+    private int riichiStick;
+    /** インスタンスをキーにした捨て牌マップ（用途要確認） */
+    private Map<Mentsu, List<TileType>> discardTiles = new HashMap<>();
+    /** 各プレイヤーがポンした牌のマップ */
+    private Map<Mentsu, List<TileType>> pon = new HashMap<>();
+    /** 各プレイヤーがチーした牌のマップ */
+    private Map<Mentsu, List<TileType>> chii = new HashMap<>();
+    /** 各プレイヤーがカンした牌のマップ */
+    private Map<Mentsu, List<TileType>> kan = new HashMap<>();
 
-    private List<TileType> wall; // 牌山
-    private Map<Integer, List<TileType>> discard = new HashMap<>(); // 打牌者の風をキー値とした打牌
-
-    private TileType dora; // ドラ表示牌
-    private int turn; // 巡目
-    private int honba; // ◯本場
-    private int riichiStick; // リーチ棒の本数
-
-    private Map<Mentsu, List<TileType>> discardTiles = new HashMap<>();// インスタンスをキー値にした捨て牌マップ
-    private Map<Mentsu, List<TileType>> pon = new HashMap<>(); // ポン
-    private Map<Mentsu, List<TileType>> chii = new HashMap<>(); // チー
-    private Map<Mentsu, List<TileType>> kan = new HashMap<>(); // カン
-
-    // コンストラクタ
+    /**
+     * Tableの新しいインスタンスを生成します。
+     */
     public Table() {
         super();
-
     }
     
     public TileType call(int wind) {
@@ -48,25 +64,22 @@ public class Table extends SubjectTable {
     	return calling;
     }
 
+    /**
+     * 指定された手牌リストをルールに基づいた順序でソートします。
+     *
+     * @param hand ソートする手牌のリスト
+     */
     public void sortHand(List<TileType> hand) {
-        /**
-         * 手牌を萬子、筒子、索子、風牌、三元牌の順でソートする
-         * 
-         * @param ソート前の手牌リスト
-         * @return ソート後の手牌リスト
-         */
         Collections.sort(hand);
     }
 
+    /**
+     * 136枚の牌すべてを含む、シャッフルされていない牌山を生成します。
+     *
+     * @return 生成された136枚の牌のリスト
+     */
     public List<TileType> createWall() {
-        /**
-         * 136枚の牌を格納した牌山リストを生成する
-         * 
-         * @return シャッフル前の牌山リスト
-         */
         List<TileType> wall = new ArrayList<>();
-
-        // 34種類の牌すべてを取得
         for (TileType tile : TileType.values()) {
             // 各牌を4枚ずつ追加
             for (int i = 0; i < 4; i++) {
@@ -77,25 +90,24 @@ public class Table extends SubjectTable {
     }
 
     /**
-     * シャッフルされた牌山リストを生成する
-     * 
-     * @return
+     * ランダムにシャッフルされた牌山を生成します。
+     *
+     * @return シャッフル済みの136枚の牌のリスト
      */
     public List<TileType> createShuffledWall() {
         List<TileType> wall = createWall();
-
-        // 牌山をシャッフル
         Collections.shuffle(wall);
-
         return wall;
     }
 
     /**
-     * 牌山から指定された枚数（配牌）を取り出し、牌山から削除する
-     * 
-     * @param wall  シャッフルされた牌山リスト
+     * 牌山から指定された枚数の牌を取り出し、その牌を牌山から削除します。
+     * 主に配牌やツモの際に使用されます。
+     *
+     * @param wall  牌を取り出す対象の牌山リスト
      * @param count 取り出す牌の枚数
-     * @return 取り出した手牌リスト
+     * @return 牌山から取り出された牌のリスト
+     * @throws IllegalArgumentException 牌山の残りの牌が不足している場合
      */
     public List<TileType> dealHand(List<TileType> wall, int count) {
         if (wall.size() < count) {

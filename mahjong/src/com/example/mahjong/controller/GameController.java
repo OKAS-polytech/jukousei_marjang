@@ -10,17 +10,33 @@ import com.example.mahjong.model.Hands;
 import com.example.mahjong.model.Judge;
 import com.example.mahjong.view.ConsoleView;
 
+/**
+ * 麻雀ゲームの主要なロジックを制御するコントローラークラスです。
+ * Model (Table, Player) と View (ConsoleView) を仲介し、ゲームの進行を管理します。
+ */
 public class GameController {
+    /** ゲーム卓の状態を管理するモデル */
     private Table table;
+    /** プレイヤーの状態を管理するモデル */
     private Player player;
+    /** ユーザーインターフェースを担当するビュー */
     private ConsoleView view;
 
+    /**
+     * GameControllerの新しいインスタンスを生成します。
+     * このコンストラクタは、ゲームに必要なモデルとビューのインスタンスを初期化します。
+     */
     public GameController() {
         this.table = new Table();
         this.player = new Player();
         this.view = new ConsoleView();
     }
 
+    /**
+     * 麻雀ゲームを開始し、管理します。
+     * ユーザーに開始を確認した後、配牌を行い、メインのゲームループを開始します。
+     * ゲームが終了したら、リソースを解放します。
+     */
     public void startGame() {
         view.showWelcomeMessage();
         if (!view.promptToStartGame()) {
@@ -36,10 +52,15 @@ public class GameController {
         view.close();
     }
 
+    /**
+     * ゲームのメインループを処理します。
+     * このループ内で、ツモ、打牌、あがり判定などの一連のゲームフローが実行されます。
+     * 現在の実装では、一人のプレイヤーの基本的な操作をシミュレートします。
+     */
     private void gameLoop() {
         boolean gameFinished = false;
         while (!gameFinished) {
-            // 1. Tsumo (Draw a tile)
+            // 1. ツモ (牌を1枚引く)
             List<TileType> drawnTileList = table.dealHand(table.getWall(), 1);
             if (drawnTileList.isEmpty()) {
                 System.out.println("牌山がなくなりました。流局です。");

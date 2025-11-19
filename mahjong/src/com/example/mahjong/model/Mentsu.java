@@ -3,25 +3,34 @@ package com.example.mahjong.model;
 import java.util.List;
 
 /**
- * 麻雀の面子(CP含むゲームの参加者)が持つべきメソッドを定義するabstractクラスです。
+ * 麻雀の参加者（プレイヤーやCPU）の基本となる抽象クラスです。
+ * 参加者が共通して持つべき状態や、実行すべき基本的なアクションを定義します。
+ * {@link Player} クラスはこのクラスを継承します。
  */
 public abstract class Mentsu implements Observer, Strategy {
-    // フィールド
+    /** 参加者の手牌 */
     private List<TileType> hand;
-    private boolean riichi; // リーチ
-    private boolean menzen; // メンゼン
-    private boolean call; // 副露の有無
-    private int[] openedTiles; // 副露または暗槓した手牌コードを格納
-    private boolean kan; // カンの有無
-    private int point; // 点棒
-    private List<Integer> agari;// あがり情報が入ったリスト
+    /** リーチ状態かどうか */
+    private boolean riichi;
+    /** 門前（メンゼン）状態かどうか */
+    private boolean menzen;
+    /** 副露（鳴き）をしているかどうか */
+    private boolean call;
+    /** 副露または暗槓した牌 */
+    private int[] openedTiles;
+    /** カンをしているかどうか */
+    private boolean kan;
+    /** 持ち点 */
+    private int point;
+    /** あがり判定結果 */
+    private List<Integer> agari;
 
     /**
-     * ツモるメソッドです。
+     * 牌をツモるアクションを定義します。
+     *
+     * @param tsumo ツモした牌のリスト（通常は1枚）
      */
-    void tsumo(List<TileType> tsumo) {
-
-    }
+    abstract void tsumo(List<TileType> tsumo);
 
     @Override
     public void update(SubjectTable table) {
@@ -29,49 +38,39 @@ public abstract class Mentsu implements Observer, Strategy {
     }
 
     /**
-     * 打牌選択をするメソッドです。
-     * 
-     * @return 打牌
+     * 捨てる牌を選択する戦略を定義します。
+     *
+     * @return 選択された捨て牌のリスト
      */
-    public List<TileType> selectDiscard() {
-        return selectDiscard();
-    }
+    @Override
+    public abstract List<TileType> selectDiscard();
 
     /**
-     * 副露をするか判断するクラスです。
-     * 
-     * @param 他家の打牌
+     * 他のプレイヤーの捨て牌に対して鳴くかどうかを判断し、実行します。
+     *
+     * @param discard 他のプレイヤーの捨て牌
      */
-    public void call(TileType discard) {
-
-    }
+    public abstract void call(TileType discard);
 
     /**
-     * ポンをするメソッドです。
-     * 
-     * @param 他家の打牌
+     * ポンを実行します。
+     *
+     * @param discard ポンする対象の捨て牌
      */
-    public void pon(List<TileType> discard) {
-        this.hand.addAll(discard);
-    }
+    public abstract void pon(List<TileType> discard);
 
     /**
-     * チーをするメソッドです。
-     * 
-     * @param 他家の打牌
+     * チーを実行します。
+     *
+     * @param discard チーする対象の捨て牌
      */
-    public void chii(List<TileType> discard) {
-        this.hand.addAll(discard);
-    }
+    public abstract void chii(List<TileType> discard);
 
     /**
-     * カンをするメソッドです。
-     * 
-     * @param 他家の打牌
-     * @return カンした手牌リスト
+     * カンを実行します。
+     *
+     * @param discard カンする対象の牌
      */
-    public void kan(List<TileType> discard) {
-        this.hand.addAll(discard);
-    }
+    public abstract void kan(List<TileType> discard);
 
 }

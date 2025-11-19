@@ -7,48 +7,71 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 麻雀の面子の一人、プレイヤーを定義するクラスです。
- * 面子クラスを継承、オブザーバーインターフェースをインプリメントします。
+ * 麻雀のプレイヤー一人ひとりを表現するモデルクラスです。
+ * プレイヤーの手牌、状態（リーチ、鳴きなど）、点数といった情報を保持し、
+ * ツモや打牌などの基本的なアクションを定義します。
+ * このクラスはUIロジックを含まず、純粋なデータとロジックのみを扱います。
  */
 public class Player extends Mentsu implements Observer {
-	private static final int id = 0; // プレイヤーid。プレイ人数増やすならstatic finalをなくす
-	private int wind; //自風(東,1 南,2 西,3 北,4)
-	private List<TileType> hand;// 手牌
-	private boolean riichi; // リーチ
-	private boolean menzen; // メンゼン
-	private boolean call; // 副露の有無
-	private int[] openedTiles; // 副露または暗槓した手牌コードを格納
-	private boolean kan; // カンの有無
-	private int point; // 点棒
-	private List<Integer> agari;// あがり情報が入ったリスト
+	/** プレイヤーを一意に識別するためのID。現状は一人プレイのため固定値。 */
+	private static final int id = 0;
+	/** プレイヤーの自風（東・南・西・北）。 */
+	private int wind;
+	/** プレイヤーが現在保持している手牌のリスト。 */
+	private List<TileType> hand;
+	/** リーチしているかどうかを示すフラグ。 */
+	private boolean riichi;
+	/** 門前（メンゼン）状態かどうかを示すフラグ。 */
+	private boolean menzen;
+	/** 副露（鳴き）を行っているかどうかを示すフラグ。 */
+	private boolean call;
+	/** 副露または暗槓した牌の情報を格納する配列。 */
+	private int[] openedTiles;
+	/** カンを行っているかどうかを示すフラグ。 */
+	private boolean kan;
+	/** プレイヤーの現在の持ち点。 */
+	private int point;
+	/** あがり判定の結果を格納するリスト。 */
+	private List<Integer> agari;
 
-	// コンストラクタ
+	/**
+	 * Playerの新しいインスタンスを生成します。
+	 * 手牌リストを空の状態で初期化します。
+	 */
 	public Player() {
 		super();
-		this.hand = new ArrayList<TileType>();
+		this.hand = new ArrayList<>();
 	}
 
-	// メソッド
-
+	/**
+	 * プレイヤーに配牌を配ります。
+	 * このメソッドはゲーム開始時に一度だけ呼び出されることを想定しています。
+	 *
+	 * @param haipai 配られる13枚の牌のリスト
+	 */
 	public void haipai(List<TileType> haipai) {
 		if (this.hand.isEmpty()) {
 			this.hand = haipai;
 		}
 	}
 
+	/**
+	 * 現在の手牌であがれる役を判定します。
+	 *
+	 * @return 成立している役（{@link Hands}）のリスト。役がない場合は空のリスト。
+	 */
 	public List<Hands> agari() {
 		List<Hands> hands = Judge.judgeHand(this.hand);
-		hands.removeIf(tile -> tile.getId() == 99);
+		hands.removeIf(tile -> tile.getId() == 99); // 'NONE' hand type removal
 		return hands;
 	}
 
+	/**
+	 * 手牌を麻雀のルールに基づいた順序（萬子→筒子→索子→字牌）でソートします。
+	 *
+	 * @param hand ソート対象の手牌リスト
+	 */
 	public void sortHand(List<TileType> hand) {
-		/**
-		 * 手牌を萬子、筒子、索子、風牌、三元牌の順でソートする
-		 * 
-		 * @param ソート前の手牌リスト
-		 * @return ソート後の手牌リスト
-		 */
 		Collections.sort(hand);
 	}
 
@@ -60,7 +83,7 @@ public class Player extends Mentsu implements Observer {
 
 	/**
 	 * 副露できるかを判断するメソッドです。
-	 * 
+	 *
 	 * @param table
 	 */
 	public void canCall(SubjectTable table) {
@@ -72,12 +95,19 @@ public class Player extends Mentsu implements Observer {
 	}
 
 	@Override
+	/**
+	 * 牌を1枚ツモり、手牌に加えます。
+	 * ツモ後に手牌は自動的にソートされ、あがり状態が判定されます。
+	 *
+	 * @param tsumo ツモしてきた牌を含むリスト（通常は1枚）
+	 */
+	@Override
 	public void tsumo(List<TileType> tsumo) {
-		sortHand(this.hand);
 		this.hand.addAll(tsumo);
+		sortHand(this.hand);
 		this.agari = Judge.judgeDuringTheGame(this.hand);
 		if (this.agari.get(0) == 1) {
-			// agari(); // Controller should handle this
+			// The decision to declare "agari" is now up to the controller
 		}
 	}
 
@@ -126,7 +156,7 @@ public class Player extends Mentsu implements Observer {
 
 	@Override
 	/**ポンをするメソッドです。
-	 * 
+	 *
 	 */
 	public void pon(List<TileType> discard) {
 		this.hand.addAll(discard);
