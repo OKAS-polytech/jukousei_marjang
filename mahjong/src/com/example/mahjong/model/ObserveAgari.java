@@ -1,4 +1,4 @@
-package model.data;
+package com.example.mahjong.model;
 
 public class ObserveAgari{
 	

@@ -1,4 +1,4 @@
-package model.data;
+package com.example.mahjong.model;
 
 /**
  * 麻雀のゲーム進行を定義するクラスです。

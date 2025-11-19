@@ -1,4 +1,4 @@
-package model.data;
+package com.example.mahjong.model;
 
 /**
  * 麻雀牌を定義する列挙型です。
