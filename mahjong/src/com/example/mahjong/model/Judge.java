@@ -1,4 +1,4 @@
-package model.data;
+package com.example.mahjong.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
